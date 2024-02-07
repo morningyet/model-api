@@ -1,22 +1,3 @@
-spring:
-  datasource:
-    url: jdbc:oracle:thin:@locahost:1521/PDB
-    username: tomp_jt_yd
-    password: tomp_jt_yd
-    driver-class-name: oracle.jdbc.OracleDriver
-#    url: jdbc:dm://locahost:5336/DMDBZZSERVER
-#    username: tnms_fj_yd
-#    password: tnms_fj_yd
-#    driver-class-name: dm.jdbc.driver.DmDriver
-#    url: jdbc:clickhouse://locahost:8123/default
-#    username: default
-#    password: asb#1234
-#    driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
-#    url: jdbc:postgresql://locahost:5532/tnmsdb_ahdx_otms
-#    username: tnmsdb_ahdx_otms
-#    password: tnmsdb_ahdx_otms
-#    driver-class-name: org.postgresql.Driver
-
 modelapi:
   sqlprinter: true
   prifixfilter:
