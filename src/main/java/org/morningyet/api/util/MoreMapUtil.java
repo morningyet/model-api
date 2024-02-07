@@ -23,7 +23,6 @@ public class MoreMapUtil {
      * @param priorityKey 优先key
      * @param ignoreCase 是否忽略大小写
      * @param keys 其他key
-     * @return
      */
     public static String getFirstDefineValueKey(Map<String,Object> map, String priorityKey, Boolean ignoreCase, String... keys){
         if(Boolean.TRUE.equals(ignoreCase)){

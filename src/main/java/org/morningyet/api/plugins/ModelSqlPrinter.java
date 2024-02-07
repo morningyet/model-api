@@ -42,7 +42,7 @@ import java.util.Properties;
  * 打印可执行的 sql 日志
  *
  * @author tianming.xu
- * @date 2024/02/04
+ * &#064;date  2024/02/04
  */
 @Slf4j
 @Component("modelSqlPrinter")

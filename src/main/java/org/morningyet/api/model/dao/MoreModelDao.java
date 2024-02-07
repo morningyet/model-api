@@ -3,13 +3,11 @@ package org.morningyet.api.model.dao;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.SQLUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.morningyet.api.model.bean.Column;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -74,7 +72,7 @@ public class MoreModelDao {
 
 
     public void tryJdbcExecute(String sql) throws SQLException {
-        if (StringUtils.isBlank(sql) || ObjectUtil.isNull(jdbcTemplate.getDataSource())) {
+        if (StrUtil.isBlank(sql) || ObjectUtil.isNull(jdbcTemplate.getDataSource())) {
             return;
         }
 
