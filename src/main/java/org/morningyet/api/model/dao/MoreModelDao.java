@@ -203,7 +203,7 @@ public class MoreModelDao {
                 insertParametersLog(sql, data, databaseType);
 
                 if((i +1) % 1000 == 0){
-                    log.info("executeBatch when size = {}, during:{}/{}",batchSize,i,datas.size());
+                    log.info(">> executeBatch when size = {}, during:{}/{}",batchSize,i,datas.size());
                     statement.executeBatch();
                     if (!StrUtil.containsIgnoreCase(databaseType, "ClickHouse")) {
                         connection.commit();
@@ -211,7 +211,7 @@ public class MoreModelDao {
                 }
             }
             statement.executeBatch();
-            log.info("insert-into >> {} executeBatch success! total size:{}",tableName,datas.size());
+            log.info(">> insert-into {} executeBatch success! total size:{}",tableName,datas.size());
             if (!StrUtil.containsIgnoreCase(databaseType, "ClickHouse")) {
                 connection.commit();
             }
@@ -236,7 +236,7 @@ public class MoreModelDao {
             } else {
                 logStr = SQLUtils.format(sql, DbType.valueOf(databaseType), data, FORMAT_OPTION);
             }
-            log.info("{}", logStr);
+            log.info(">>> {}", logStr);
         } catch (Exception ignore) {
         }
     }
@@ -247,15 +247,19 @@ public class MoreModelDao {
         if (ObjectUtil.isNull(jdbcTemplate.getDataSource())) {
             return "";
         }
-
-        try {
-            DataSource dataSource = jdbcTemplate.getDataSource();
-            Method getUsername = ReflectUtil.getMethod(dataSource.getClass(), "getUsername");
-            Object username = ReflectUtil.invoke(dataSource, getUsername);
-            return String.valueOf(username);
+        try (Connection connection = jdbcTemplate.getDataSource().getConnection()) {
+            return connection.getMetaData().getUserName();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            return "";
+            try {
+                DataSource dataSource = jdbcTemplate.getDataSource();
+                Method getUsername = ReflectUtil.getMethod(dataSource.getClass(), "getUsername");
+                Object username = ReflectUtil.invoke(dataSource, getUsername);
+                return String.valueOf(username);
+            } catch (Exception ee) {
+                log.error(ee.getMessage(), ee);
+            }
         }
+        return "";
     }
 }

@@ -1,5 +1,5 @@
 modelapi:
-  sqlprinter: true
+  #sqlprinter: true
   prifixfilter:
     - insert into 666
   type2javamapping:
