@@ -1,5 +1,7 @@
 package org.morningyet.api.model;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.morningyet.api.model.service.MoreModelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,11 +17,15 @@ import java.util.Map;
  * &#064;date  2024/02/02
  */
 @Service
+@Slf4j
+@AllArgsConstructor
 public class MoreModelApi {
 
 
     @Autowired
     private MoreModelService modelService;
+
+
 
 
     /**
