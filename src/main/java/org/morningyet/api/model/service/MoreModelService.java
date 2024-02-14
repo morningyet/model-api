@@ -175,7 +175,7 @@ public class MoreModelService {
             synchronized (this) {
                 if (ObjectUtil.isNull(columns)) {
                     List<Column> entity = queryColumnsInfo(tableName);
-                    log.info("columnsMapKey:{}, columns info:{}", JSONUtil.toJsonStr(JSONUtil.parse(entity)));
+                    log.info("columnsMapKey:{}, columns info:{}", columnsMapKey,JSONUtil.toJsonStr(JSONUtil.parse(entity)));
                     columnsMap.put(columnsMapKey, entity);
                 }
             }
