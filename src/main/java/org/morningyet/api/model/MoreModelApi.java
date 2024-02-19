@@ -38,5 +38,14 @@ public class MoreModelApi {
                                   Map<String, String> typemapping) throws Exception {
         modelService.insertBatchByJdbc(tableName, valueMapList, typemapping);
     }
+
+    /**
+     * @param tableName    表名
+     * @param valueMapList 传入数据集合
+     * @throws SQLException 异常
+     */
+    public void insertBatchByJdbc(String tableName, List<Map<String, Object>> valueMapList) throws Exception {
+        modelService.insertBatchByJdbc(tableName, valueMapList, null);
+    }
 }
 
