@@ -4,21 +4,24 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.morningyet.api</groupId>
+    <!-- 新central.sonatype.com的namespace-->
+    <groupId>io.github.morningyet</groupId>
     <artifactId>model-api</artifactId>
+    <!-- 发布到这个上OSSRH:项目中的version,不要带上SNAPSHOT，这样就可以直接发布到中央仓库
+         如果带上了，会发布到私服的snapshots下面，可以搜索进行查看,
+         但是发布到Maven Central的新版本是不支持SNAPSHOT会被校验这个的，如果带来SNAPSHOT则推送失败，所以需要去掉version这个SNAPSHOT。 -->
     <version>1.0.0</version>
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
+    <!--描述一定要有-->
+    <description>model自动补全与注入</description>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!-- 服务id 也就是setting.xml中的servers.server.id -->
+        <serverId>central</serverId>
 
         <spring.boot.version>2.3.2.RELEASE</spring.boot.version>
         <junit.version>4.12</junit.version>
@@ -128,140 +131,102 @@
         </dependency>
     </dependencies>
 
-
     <build>
-        <finalName>${project.artifactId}-${project.version}</finalName>
-        <pluginManagement>
-            <plugins>
-                <!--指定JDK编译版本 -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <source>${maven.compiler.source}</source>
-                        <target>${maven.compiler.target}</target>
-                        <encoding>${project.build.sourceEncoding}</encoding>
-                    </configuration>
-                </plugin>
-
-                <!-- javadoc -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.3.1</version>
-                    <executions>
-                        <execution>
-                            <id>attach-javadocs</id>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-
-                    <configuration>
-                        <doclint>none</doclint>
-                        <charset>UTF-8</charset> <!-- 指定Javadoc文档中的字符集 -->
-                        <encoding>UTF-8</encoding> <!-- 指定Javadoc文档的编码 -->
-                        <docencoding>UTF-8</docencoding>
-                        <failOnError>false</failOnError>
-                        <!-- 忽略生成文档中的错误，如果想看下控制台中关于生成doc错误的去掉这个参数 -->
-                        <additionalparam>-Xdoclint:none</additionalparam>
-                    </configuration>
-                </plugin>
-
-                <!-- GPG -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.6</version>
-                    <executions>
-                        <execution>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>sign</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <!--Nexus Staging Maven插件是将组件部署到OSSRH并将其发布到Central Repository的推荐方法-->
-                <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.13</version>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <serverId>sonatype</serverId>
-                        <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    </configuration>
-                </plugin>
-
-
-                <!-- 打包跳过测试 -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.18.1</version>
-                    <configuration>
-                        <skipTests>true</skipTests>
-                    </configuration>
-                </plugin>
-
-                <!--将应用打包成可执行jar包-->
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <version>2.3.2.RELEASE</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>repackage</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>3.2.1</version>
-                    <executions>
-                        <execution>
-                            <id>attach-sources</id>
-                            <goals>
-                                <goal>jar-no-fork</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+        <plugins>
+            <!-- 编译插件，设置源码以及编译的jdk版本 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <!-- Source -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Javadoc -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Javadoc -->
+            <!-- Gpg Signature -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--新账号的配置：将组件部署到OSSRH并将其发布到Central Repository-->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.4.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <tokenAuth>true</tokenAuth>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
-    <!-- 指定Maven分发构件的位置-->
     <distributionManagement>
         <snapshotRepository>
-            <id>sonatype</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <!-- 与settings.xml的server.id保持一致 -->
+            <id>${serverId}</id>
+            <url>https://central.sonatype.com/</url>
         </snapshotRepository>
-        <repository>
-            <id>sonatype</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
     </distributionManagement>
 
-
-    <!--    需要替换的内容-->
+    <!--项目访问url -->
+    <url>https://github.com/BigBigFeiFei/es-spring-boot-start</url>
     <scm>
+        <!--项目访问url -->
         <url>https://github.com/morningyet/model-api</url>
-        <connection>https://github.com/morningyet/model-api</connection>
-        <developerConnection>https://github.com/morningyet/model-api`</developerConnection>
+        <!--项目访问url.git结尾 -->
+        <connection>scm:git:https://github.com/morningyet/model-api.git</connection>
+        <!--项目访问url.git结尾 -->
+        <developerConnection>scm:git:https://github.com/morningyet/model-api.git</developerConnection>
     </scm>
+
     <developers>
         <developer>
+            <id>morningyet</id>
             <name>morningyet</name>
             <email>morningyet@163.com</email>
+            <!--项目访问url -->
             <url>https://github.com/morningyet/model-api</url>
             <roles>
                 <role>developer</role>
@@ -269,38 +234,11 @@
         </developer>
     </developers>
 
-
-    <!--第三方maven私服-->
-    <repositories>
-        <repository>
-            <id>mvnrepository</id>
-            <name>mvn repository</name>
-            <url>http://mvnrepository.com/</url>
-        </repository>
-        <repository>
-            <id>alimaven-central</id>
-            <name>aliyun maven central</name>
-            <url>https://maven.aliyun.com/repository/central</url>
-        </repository>
-        <repository>
-            <id>aliyun-public</id>
-            <name>aliyun nexus</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-        <repository>
-            <id>nexus-aliyun</id>
-            <name>Nexus aliyun</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
 
 </project>
