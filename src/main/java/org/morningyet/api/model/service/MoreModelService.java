@@ -58,6 +58,7 @@ public class MoreModelService {
             case "postgresql":
                 return modelDao.queryColumnsInfoByPostgresql(tableName.toLowerCase());
             default:
+                log.error("unsupported database type:{}", databseType);
                 return modelDao.queryColumnsInfoByOracle(tableName.toUpperCase());
         }
     }

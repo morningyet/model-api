@@ -163,7 +163,22 @@ public class MoreModelDao {
     }
 
     public List<Column> queryColumnsInfoByMysql(String tableName) {
-        String sql = "";
+        String sql = "SELECT cc.TABLE_NAME                                         AS table_name,\n" +
+                "       t.TABLE_COMMENT                                       AS table_comment,\n" +
+                "       cc.ORDINAL_POSITION                                   AS column_position,\n" +
+                "       cc.COLUMN_NAME                                        AS column_name,\n" +
+                "       cc.DATA_TYPE                                          AS column_type,\n" +
+                "       cc.CHARACTER_MAXIMUM_LENGTH                           AS column_length,\n" +
+                "       cc.COLUMN_DEFAULT                                     AS column_default,\n" +
+                "       CASE WHEN cc.IS_NULLABLE = 'NO' THEN 'N' ELSE 'Y' END AS if_nullable,\n" +
+                "       cc.NUMERIC_PRECISION                                  AS numeric_precision,\n" +
+                "       cc.NUMERIC_SCALE                                      AS numeric_scale,\n" +
+                "       cc.COLUMN_COMMENT                                     AS column_comment\n" +
+                "FROM information_schema.tables t\n" +
+                "         INNER JOIN information_schema.columns cc ON t.TABLE_NAME = cc.TABLE_NAME\n" +
+                "WHERE t.TABLE_NAME =  ? \n" +
+                "  AND t.TABLE_SCHEMA = DATABASE()\n" +
+                "ORDER BY cc.ORDINAL_POSITION;";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Column.class), tableName);
     }
 
