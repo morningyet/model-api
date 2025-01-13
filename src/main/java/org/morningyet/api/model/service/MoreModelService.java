@@ -56,10 +56,11 @@ public class MoreModelService {
             case "clickhouse":
                 return modelDao.queryColumnsInfoByClickhouse(tableName);
             case "postgresql":
+            case "kingbasees":
                 return modelDao.queryColumnsInfoByPostgresql(tableName.toLowerCase());
             default:
                 log.error("unsupported database type:{}", databseType);
-                return modelDao.queryColumnsInfoByOracle(tableName.toUpperCase());
+                return modelDao.queryColumnsInfoByPostgresql(tableName.toLowerCase());
         }
     }
 
