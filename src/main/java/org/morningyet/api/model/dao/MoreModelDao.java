@@ -188,9 +188,9 @@ public class MoreModelDao {
         String format = "INSERT INTO {} ({}) VALUES ({}) ";
         List<String> columnNames = columns.stream().map(Column::getColumnName).collect(Collectors.toList());
         String columnStr = StrUtil.join(",", columnNames);
-        List<String> State = columnNames.stream().map(r -> "?").collect(Collectors.toList());
-        String StateStr = StrUtil.join(",", State);
-        String sql = StrUtil.format(format, tableName, columnStr, StateStr);
+        List<String> state = columnNames.stream().map(r -> "?").collect(Collectors.toList());
+        String stateStr = StrUtil.join(",", state);
+        String sql = StrUtil.format(format, tableName, columnStr, stateStr);
 
         String databaseType = "";
 
@@ -234,6 +234,35 @@ public class MoreModelDao {
             log.error(e.getMessage(), e);
         }
     }
+
+
+    public void insertOnceJdbc(String tableName, List<Column> columns, List<Object> data) throws SQLException {
+
+        String format = "INSERT INTO {} ({}) VALUES ({}) ";
+        List<String> columnNames = columns.stream().map(Column::getColumnName).collect(Collectors.toList());
+        String columnStr = StrUtil.join(",", columnNames);
+        List<String> state = columnNames.stream().map(r -> "?").collect(Collectors.toList());
+        String stateStr = StrUtil.join(",", state);
+        String sql = StrUtil.format(format, tableName, columnStr, stateStr);
+        if (ObjectUtil.isNull(jdbcTemplate.getDataSource())) {
+            log.error("获取数据源失败");
+            return;
+        }
+
+        try (Connection connection = jdbcTemplate.getDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int j = 0; j < data.size(); j++) {
+                Object obj = data.get(j);
+                statement.setObject(j + 1, obj);
+            }
+            insertParametersLog(sql, data, "postgre");
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            log.error(e.getMessage(), e);
+            throw e;
+        }
+    }
+
 
     private void insertParametersLog(String sql, List<Object> data, String databaseType) {
         try {
