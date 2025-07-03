@@ -10,7 +10,7 @@
     <!-- 发布到这个上OSSRH:项目中的version,不要带上SNAPSHOT，这样就可以直接发布到中央仓库
          如果带上了，会发布到私服的snapshots下面，可以搜索进行查看,
          但是发布到Maven Central的新版本是不支持SNAPSHOT会被校验这个的，如果带来SNAPSHOT则推送失败，所以需要去掉version这个SNAPSHOT。 -->
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <!--描述一定要有-->
     <description>model自动补全与注入</description>
     <!--名称一定要有-->

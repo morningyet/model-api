@@ -4,11 +4,13 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.map.CaseInsensitiveMap;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.morningyet.api.model.dao.MoreModelDao;
@@ -104,11 +106,22 @@ public class MoreModelService {
     private static List<Object> mapTrans2List(List<Column> columns, Map<String, Object> map, Map<String, String> typemapping) {
         List<Object> data = new ArrayList<>();
 
+        //将map打扁 预定义一个二级map
+        Map<String, Object> secondaryMap = getSubMap(map);
+        //将map打扁 预定义一个三级map
+        Map<String, Object> thirdMap = getSubMap(secondaryMap);
+
+        //抽取到顶层数据
+        secondaryMap.forEach(map::putIfAbsent);
+        thirdMap.forEach(map::putIfAbsent);
+
+        //遍历columns 生成预定义数组columns
         for (Column column : columns) {
             String columnName = column.getColumnName();
             Object value = null;
 
-            columnName = MoreMapUtil.getFirstDefineValueKey(map, columnName, true, StrUtil.removeAll(columnName, "_"), StrUtil.removeAll(columnName, "-"));
+            columnName = MoreMapUtil.getFirstDefineValueKey(map, columnName, true,
+                    StrUtil.removeAll(columnName, "_"), StrUtil.removeAll(columnName, "-"));
 
             //中间件特征值映射
             if (StrUtil.containsAnyIgnoreCase(columnName, "patition", "partition") && !map.containsKey(columnName)) {
@@ -124,11 +137,9 @@ public class MoreModelService {
                         "kafka_time", "mq_time", "am_time", "queue_time");
             }
 
-
             if (map.containsKey(columnName)) {
 
                 String columnType = column.getColumnType();
-
                 if (typemapping.containsKey(columnType)) {
                     String javaType = typemapping.get(columnType);
                     switch (javaType.toLowerCase()) {
@@ -255,4 +266,40 @@ public class MoreModelService {
         long ed = System.currentTimeMillis();
         log.info("{} once insert to:{},cost:{}ms", columnsMapKey, tableName, ed - st);
     }
+
+
+
+    private static Map<String, Object> getSubMap(Map<String, Object> oriMap){
+
+        if(MapUtil.isEmpty(oriMap)){
+            return new HashMap<>();
+        }
+        //将map打扁 预定义一个二级map
+        Map<String, Object> secondaryMap = new HashMap<>();
+        for (Map.Entry<String, Object> entry : oriMap.entrySet()) {
+            try {
+                Object value = entry.getValue();
+                if (ObjectUtil.isNull(value)) {
+                    continue;
+                }
+                JSONObject jsonValue = JSONUtil.parseObj(value);
+
+                if(MapUtil.isEmpty(oriMap)){
+                    continue;
+                }
+                //将次级数据抽取
+                for (Map.Entry<String, Object> jsonEntry : jsonValue.entrySet()) {
+                    if (ObjectUtil.isEmpty(jsonEntry.getKey()) || ObjectUtil.isEmpty(jsonEntry.getValue())) {
+                        continue;
+                    }
+                    secondaryMap.putIfAbsent(jsonEntry.getKey(),jsonEntry.getValue());
+                }
+            }catch (Exception ignore){
+
+            }
+        }
+        return secondaryMap;
+    }
+
+
 }
