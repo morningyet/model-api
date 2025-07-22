@@ -150,12 +150,12 @@ public class ModelSqlPrinter extends FilterEventAdapter {
 	}
 
 	private boolean excludeSql(String sql) {
-		if(CollUtil.isEmpty(moreModelProperties.getPrifixfilter())
+		if(CollUtil.isEmpty(moreModelProperties.getPrefixfilter())
 			&& CollUtil.isEmpty(moreModelProperties.getContainfilter())){
 			return false;
 		}
-		if(CollUtil.isNotEmpty(moreModelProperties.getPrifixfilter())){
-			for (String prefixSql : moreModelProperties.getPrifixfilter()) {
+		if(CollUtil.isNotEmpty(moreModelProperties.getPrefixfilter())){
+			for (String prefixSql : moreModelProperties.getPrefixfilter()) {
 				if (StrUtil.startWithIgnoreCase(sql,prefixSql)) {
 					return true;
 				}

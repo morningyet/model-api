@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.morningyet.api.model.bean.Column;
+import org.morningyet.api.model.props.MoreModelProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,6 +27,10 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class MoreModelDao {
+
+
+    @Autowired
+    private MoreModelProperties moreModelProperties;
 
 
     @Autowired
@@ -266,6 +271,10 @@ public class MoreModelDao {
 
     private void insertParametersLog(String sql, List<Object> data, String databaseType) {
         try {
+            if(moreModelProperties.excludeSql(sql)){
+                return;
+            }
+
             String logStr = null;
             if (StrUtil.containsIgnoreCase(databaseType, "clickhouse")) {
                 logStr = SQLUtils.format(sql, DbType.clickhouse, data, FORMAT_OPTION);
