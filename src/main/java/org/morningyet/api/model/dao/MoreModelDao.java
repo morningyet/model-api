@@ -1,5 +1,6 @@
 package org.morningyet.api.model.dao;
 
+import cn.hutool.core.collection.IterUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -162,7 +163,19 @@ public class MoreModelDao {
                 "           case when is_in_sorting_key = 0 then 'N' else 'Y' end   as if_index\n" +
                 "       from system.columns\n" +
                 "       where table = ? ";
-        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Column.class), tableName);
+        List<Column> res = jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Column.class), tableName);
+        if(IterUtil.isNotEmpty(res)){
+            res.forEach(r -> {
+                String columnType = r.getColumnType();
+                if(StrUtil.contains(columnType, "Nullable(")){
+                    columnType = StrUtil.removePrefix(columnType, "Nullable(");
+                    columnType = StrUtil.removeSuffix(columnType, ")");
+                    r.setColumnType(columnType);
+                    r.setIfNullable("Y");
+                }
+            });
+        }
+        return res;
 
 
     }

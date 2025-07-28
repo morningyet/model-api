@@ -44,7 +44,7 @@ public class Column implements Serializable {
     private String columnDefault;
 
     /***
-     * 是否可为空
+     * 是否可为空  Y N 参考oracle的值
      */
     private String ifNullable;
 
