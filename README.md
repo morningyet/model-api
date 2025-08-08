@@ -151,7 +151,7 @@ TOMP_JT_YD:my_test batchinsert.size:2 ,cost:364ms
 
 ### 3. 核心方法说明
 
-- ```
+- ```java
   void insertBatchByJdbc(String tableName, List<Map<String, Object>> datas)
   ```
 
@@ -169,13 +169,13 @@ TOMP_JT_YD:my_test batchinsert.size:2 ,cost:364ms
 
   作用：返回当前数据库类型。
 
-- ```javas
+- ```java
   List<Column>  moreModelService.queryColumnsInfo(String tableName)
   ```
 
   作用：返回当前数据库下表的列信息  List 《Column》
 
--  ```java
+- ```java
   void insertOnceByJdbc(String tableName, Map<String, Object> valueMap)
   ```
 
