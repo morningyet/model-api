@@ -188,4 +188,4 @@ TOMP_JT_YD:my_test batchinsert.size:2 ,cost:364ms
 
 ## 许可证
 
-本项目基于 MIT 许可证 开源。
+本项目基于 Apache License 2.0 许可证 开源。

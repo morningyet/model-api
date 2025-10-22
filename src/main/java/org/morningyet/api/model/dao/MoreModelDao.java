@@ -122,7 +122,8 @@ public class MoreModelDao {
 
     }
 
-    public List<Column> queryColumnsInfoByPostgresql(String tableName) {
+    @Deprecated
+    public List<Column> queryColumnsInfoByPostgresqlBK(String tableName) {
         String sql = "\n" +
                 "SELECT cc.table_name                                         TABLE_NAME,\n" +
                 "       obj_description(c.oid)                                table_comment,\n" +
@@ -143,9 +144,41 @@ public class MoreModelDao {
                 "    and cc.table_catalog = current_database()\n" +
                 "    and cc.table_schema = current_schema()\n" +
                 "where c.relname = ? \n" +
-                "order by cc.ordinal_position;";
+                "order by cc.ordinal_position";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Column.class), tableName);
     }
+
+    public List<Column> queryColumnsInfoByPostgresql(String tableName) {
+        String sql = "SELECT\n" +
+                "  cc.table_name                                         TABLE_NAME,\n" +
+                "  obj_description(c.oid)                                table_comment,\n" +
+                "  cc.ordinal_position                                   column_position,\n" +
+                "  cc.column_name                                        column_name,\n" +
+                "  cc.udt_name                                           column_type,\n" +
+                "  cc.character_maximum_length                           column_length,\n" +
+                "  replace(cc.column_default, '::character varying', '') column_default,\n" +
+                "  case when cc.is_nullable = 'NO' then 'N' else 'Y' end if_nullable,\n" +
+                "  cc.numeric_precision                                  numeric_precision,\n" +
+                "  cc.numeric_scale                                      numeric_scale,\n" +
+                "  col_description(a.attrelid, a.attnum) as              column_comment\n" +
+                "FROM\n" +
+                "  pg_class c\n" +
+                "  inner join pg_namespace n on c.relnamespace = n.oid\n" +
+                "  inner join pg_attribute a on a.attrelid = c.oid and a.attnum > 0\n" +
+                "  inner join pg_type t on a.atttypid = t.oid\n" +
+                "  inner join information_schema.columns cc\n" +
+                "    on cc.table_name = c.relname\n" +
+                "    and cc.column_name = a.attname\n" +
+                "    and cc.table_catalog = current_database()\n" +
+                "    and cc.table_schema = n.nspname\n" +
+                "where\n" +
+                "  c.relname = ? \n" +
+                "  and n.nspname = current_schema()\n" +
+                "order by\n" +
+                "  cc.ordinal_position";
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Column.class), tableName);
+    }
+
 
 
     public List<Column> queryColumnsInfoByClickhouse(String tableName) {
