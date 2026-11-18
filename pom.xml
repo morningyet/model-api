@@ -207,10 +207,12 @@
                 </executions>
             </plugin>
             <!--新账号的配置：将组件部署到OSSRH并将其发布到Central Repository-->
+            <!-- 0.8.0：修复服务端响应新增 warnings 字段导致 0.4.0 严格解析报
+                 Unrecognized field "warnings" (DeploymentApiResponse)（0.6.0 起修复） -->
             <plugin>
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.4.0</version>
+                <version>0.8.0</version>
                 <extensions>true</extensions>
                 <configuration>
                     <publishingServerId>central</publishingServerId>
