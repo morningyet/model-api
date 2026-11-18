@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @Service
@@ -36,7 +37,8 @@ public class MoreModelService {
     private MoreModelProperties modelProperties;
 
 
-    public Map<String, List<Column>> columnsMap = new HashMap<>();
+    /** 表列元数据缓存（1.0.8 起 ConcurrentHashMap：读路径无锁并发安全，原来 HashMap 读不设防） */
+    public Map<String, List<Column>> columnsMap = new ConcurrentHashMap<>();
 
 
     /**
@@ -281,6 +283,16 @@ public class MoreModelService {
                 Object value = entry.getValue();
                 if (ObjectUtil.isNull(value)) {
                     continue;
+                }
+                // 1.0.8 性能：JSON 解析只可能对 Map/JSONObject 或以 '{' 开头的字符串成功，
+                // 其余值（纯文本/时间串/数字等）此前也必然解析失败被吞掉，直接跳过——
+                // 告警报文 80+ 字段几乎全是纯文本，每行可省数十次无效解析（风暴期热点）。
+                if (!(value instanceof Map) && !(value instanceof JSONObject)) {
+                    if (!(value instanceof CharSequence)
+                            || StrUtil.isBlank((CharSequence) value)
+                            || StrUtil.trim((CharSequence) value).charAt(0) != '{') {
+                        continue;
+                    }
                 }
                 JSONObject jsonValue = JSONUtil.parseObj(value);
 

@@ -14,6 +14,7 @@ import org.morningyet.api.model.props.MoreModelProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -43,6 +44,39 @@ public class MoreModelDao {
     @Getter @Setter
     private int batchSize = 1000;
 
+    /**
+     * 获取可参与 Spring 事务的连接（1.0.8 起）：
+     * - 当前线程存在 Spring 事务（@Transactional / TransactionTemplate）→ 返回事务绑定的连接，
+     *   提交/回滚由外层事务统一控制，本类不再自行 setAutoCommit(false)/commit()；
+     * - 无事务 → 行为与 dataSource.getConnection() 完全一致（从连接池取新连接）。
+     * 必须配对使用 {@link #releaseQuietly(Connection, DataSource)} 释放。
+     */
+    private Connection getConnection(DataSource dataSource) {
+        return DataSourceUtils.getConnection(dataSource);
+    }
+
+    /**
+     * 释放连接：事务绑定的连接不会被关闭（由事务管理器在事务完成时统一回收）；
+     * 非事务连接正常归还连接池。无事务调用方的行为与 1.0.7 一致。
+     */
+    private void releaseQuietly(Connection connection, DataSource dataSource) {
+        DataSourceUtils.releaseConnection(connection, dataSource);
+    }
+
+    /** 该连接是否被外层 Spring 事务持有（决定 insertBatchJdbc 是否自行 setAutoCommit(false)/commit） */
+    private boolean isConnectionTxBound(Connection connection, DataSource dataSource) {
+        return DataSourceUtils.isConnectionTransactional(connection, dataSource);
+    }
+
+    private void closeQuietly(PreparedStatement ps) {
+        if (ps != null) {
+            try {
+                ps.close();
+            } catch (SQLException ignore) {
+            }
+        }
+    }
+
 
     /**
      * 获取数据库类型*
@@ -53,10 +87,14 @@ public class MoreModelDao {
      */
     public String getDatabseType(DataSource dataSource) {
         String databaseType = "";
-        try (Connection connection = dataSource.getConnection()) {
+        Connection connection = null;
+        try {
+            connection = getConnection(dataSource);
             databaseType = connection.getMetaData().getDatabaseProductName();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        } finally {
+            releaseQuietly(connection, dataSource);
         }
         return databaseType;
     }
@@ -78,7 +116,8 @@ public class MoreModelDao {
 
 
     public void tryJdbcExecute(String sql) throws SQLException {
-        if (StrUtil.isBlank(sql) || ObjectUtil.isNull(jdbcTemplate.getDataSource())) {
+        DataSource dataSource = jdbcTemplate.getDataSource();
+        if (StrUtil.isBlank(sql) || ObjectUtil.isNull(dataSource)) {
             return;
         }
 
@@ -87,13 +126,18 @@ public class MoreModelDao {
 
         sql = StrUtil.removeSuffix(sql.trim(), ";");
 
-        try (Connection connection = jdbcTemplate.getDataSource().getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql);
-        ) {
+        Connection connection = null;
+        PreparedStatement ps = null;
+        try {
+            connection = getConnection(dataSource);
+            ps = connection.prepareStatement(sql);
             ps.execute();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw e;
+        } finally {
+            closeQuietly(ps);
+            releaseQuietly(connection, dataSource);
         }
     }
 
@@ -245,18 +289,28 @@ public class MoreModelDao {
 
         String databaseType = "";
 
-        if (ObjectUtil.isNull(jdbcTemplate.getDataSource())) {
+        DataSource dataSource = jdbcTemplate.getDataSource();
+        if (ObjectUtil.isNull(dataSource)) {
             log.error("获取数据源失败");
             return;
         }
 
-        try (Connection connection = jdbcTemplate.getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)
-        ) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = getConnection(dataSource);
+            statement = connection.prepareStatement(sql);
 
             databaseType = connection.getMetaData().getDatabaseProductName();
-            if (!StrUtil.containsIgnoreCase(databaseType, "ClickHouse")) {
+            // 事务绑定的连接绝不能自行 setAutoCommit(false)/commit()：commit 会提前提交外层事务。
+            // 无外层事务时保持 1.0.7 的行为：自行管理事务、每 1000 行分片提交。
+            boolean txBound = isConnectionTxBound(connection, dataSource);
+            if (!StrUtil.containsIgnoreCase(databaseType, "ClickHouse") && !txBound) {
                 connection.setAutoCommit(false);
+            }
+            if (txBound) {
+                log.info(">>> insertBatchJdbc joined outer spring transaction, size:{}, commit/rollback controlled by caller",
+                        datas.size());
             }
 
             for (int i = 0; i < datas.size(); i++) {
@@ -268,21 +322,30 @@ public class MoreModelDao {
                 statement.addBatch();
                 insertParametersLog(sql, data, databaseType);
 
-                if((i +1) % 1000 == 0){
+                if((i +1) % Math.max(1, batchSize) == 0){
                     log.info(">> executeBatch when size = {}, during:{}/{}",batchSize,i,datas.size());
                     statement.executeBatch();
-                    if (!StrUtil.containsIgnoreCase(databaseType, "ClickHouse")) {
+                    if (!StrUtil.containsIgnoreCase(databaseType, "ClickHouse") && !txBound) {
                         connection.commit();
                     }
                 }
             }
             statement.executeBatch();
             log.info(">> insert-into {} executeBatch success! total size:{}",tableName,datas.size());
-            if (!StrUtil.containsIgnoreCase(databaseType, "ClickHouse")) {
+            if (!StrUtil.containsIgnoreCase(databaseType, "ClickHouse") && !txBound) {
                 connection.commit();
             }
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
+            if (connection != null && isConnectionTxBound(connection, dataSource)) {
+                // 外层事务模式下必须上抛，事务所有者才知道要回滚；
+                // 吞掉会导致外层事务把"半批数据"提交出去。
+                // 无事务路径保持 1.0.7 的吞掉+日志行为不变（向后兼容）。
+                throw e;
+            }
+        } finally {
+            closeQuietly(statement);
+            releaseQuietly(connection, dataSource);
         }
     }
 
@@ -295,22 +358,29 @@ public class MoreModelDao {
         List<String> state = columnNames.stream().map(r -> "?").collect(Collectors.toList());
         String stateStr = StrUtil.join(",", state);
         String sql = StrUtil.format(format, tableName, columnStr, stateStr);
-        if (ObjectUtil.isNull(jdbcTemplate.getDataSource())) {
+        DataSource dataSource = jdbcTemplate.getDataSource();
+        if (ObjectUtil.isNull(dataSource)) {
             log.error("获取数据源失败");
             return;
         }
 
-        try (Connection connection = jdbcTemplate.getDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            connection = getConnection(dataSource);
+            statement = connection.prepareStatement(sql);
             for (int j = 0; j < data.size(); j++) {
                 Object obj = data.get(j);
                 statement.setObject(j + 1, obj);
             }
-            insertParametersLog(sql, data, "postgre");
+            insertParametersLog(sql, data, connection.getMetaData().getDatabaseProductName());
             statement.executeUpdate();
         } catch (SQLException e) {
             log.error(e.getMessage(), e);
             throw e;
+        } finally {
+            closeQuietly(statement);
+            releaseQuietly(connection, dataSource);
         }
     }
 
@@ -346,18 +416,22 @@ public class MoreModelDao {
         if (ObjectUtil.isNull(jdbcTemplate.getDataSource())) {
             return "";
         }
-        try (Connection connection = jdbcTemplate.getDataSource().getConnection()) {
+        DataSource dataSource = jdbcTemplate.getDataSource();
+        Connection connection = null;
+        try {
+            connection = getConnection(dataSource);
             return connection.getMetaData().getUserName();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             try {
-                DataSource dataSource = jdbcTemplate.getDataSource();
                 Method getUsername = ReflectUtil.getMethod(dataSource.getClass(), "getUsername");
                 Object username = ReflectUtil.invoke(dataSource, getUsername);
                 return String.valueOf(username);
             } catch (Exception ee) {
                 log.error(ee.getMessage(), ee);
             }
+        } finally {
+            releaseQuietly(connection, dataSource);
         }
         return "";
     }

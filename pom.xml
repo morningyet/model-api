@@ -12,7 +12,7 @@
          如果带上了，会发布到私服的snapshots下面，可以搜索进行查看,
          但是发布到Maven Central的新版本是不支持SNAPSHOT会被校验这个的，
          如果带来SNAPSHOT则推送失败，所以需要去掉version这个SNAPSHOT。 -->
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <!--描述一定要有-->
     <description>model自动补全与注入</description>
     <!--名称一定要有-->
@@ -33,7 +33,7 @@
         <junit.version>4.12</junit.version>
         <log4j.version>2.20.0</log4j.version>
         <druid.version>1.2.8</druid.version>
-        <hutool.version>5.7.16</hutool.version>
+        <hutool.version>5.8.29</hutool.version>
     </properties>
 
 
@@ -73,7 +73,7 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-            <version>5.7.7</version>
+            <version>${hutool.version}</version>
         </dependency>
 
         <dependency>
@@ -112,7 +112,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.83</version>
+            <version>1.2.84</version>
         </dependency>
 
         <dependency>
@@ -134,6 +134,18 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+
+        <!-- 1.0.8 事务参与回归测试用（test 范围，不影响发布产物） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
